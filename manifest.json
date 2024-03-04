@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "obsidian-live",
+	"name": "Obsidian Live",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Realtime Collaborative Workspace",
+	"author": "Daniel Grossmann-Kavanagh",
+	"authorUrl": "https://github.com/dtkav",
+	"fundingUrl": "https://www.buymeacoffee.com/dtkav",
 	"isDesktopOnly": false
 }
