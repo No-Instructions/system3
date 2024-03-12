@@ -21,8 +21,6 @@ export const connectionManagerFacet: Facet<LiveViewManager, LiveViewManager> =
 
 export const ySyncAnnotation = Annotation.define();
 
-export const Ignore = Annotation.define();
-
 export class LiveCMPluginValue implements PluginValue {
 	editor: EditorView;
 	view?: LiveView;
@@ -86,12 +84,6 @@ export class LiveCMPluginValue implements PluginValue {
 			this.view?.document.text !== this.editor.state.doc.toString() &&
 			this.view?.document._provider?.shouldConnect
 		) {
-			console.log(
-				"setting buffer on view",
-				this.view.document.path,
-				this.editor.state.doc,
-				this.view.document._provider?.shouldConnect
-			);
 			this.editor.dispatch({
 				changes: {
 					from: 0,

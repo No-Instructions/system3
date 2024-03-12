@@ -3,9 +3,6 @@ import * as Y from "yjs";
 import { IndexeddbPersistence, fetchUpdates } from "y-indexeddb";
 import { HasProvider } from "./HasProvider";
 import { SharedFolder } from "./SharedFolder";
-import { Doc, applyUpdate } from "yjs";
-import { getDeltaOperations } from "./ydiff";
-import { updateFrontMatter } from "./Frontmatter";
 import { YText } from "yjs/dist/src/internals";
 import { curryLog } from "./debug";
 import { LoginManager } from "./LoginManager";
@@ -100,34 +97,6 @@ export class Document extends HasProvider {
 		// XXX: Might be able to use _persistence.once("synced", ...) instead
 		const nUpdates = await this._countUpdates();
 		return nUpdates < 3;
-	}
-
-	async ensureShareLink() {
-		const main = Y.encodeStateVector(this.ydoc);
-
-		// make a new working doc and sync it
-		const workingDoc = new Doc();
-		const branch = Y.encodeStateVector(workingDoc);
-		const pull = Y.encodeStateAsUpdate(this.ydoc, branch);
-		Y.logUpdate(pull);
-		applyUpdate(workingDoc, pull);
-
-		// compute delta
-		const ytext = workingDoc.getText("contents");
-		const withShareLink = updateFrontMatter(ytext.toString(), {
-			shareLink: `https://ydoc.live/${this.guid}`,
-		});
-		const deltaOps = getDeltaOperations(ytext.toString(), withShareLink);
-		ytext.applyDelta(deltaOps, { sanitize: true });
-
-		// compute diff
-		const diff = Y.encodeStateAsUpdate(workingDoc, main);
-		Y.logUpdate(diff);
-
-		// commit
-		this.ydoc.transact(() => {
-			applyUpdate(this.ydoc, diff);
-		}, "frontmatter");
 	}
 
 	destroy() {
