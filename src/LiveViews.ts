@@ -139,6 +139,10 @@ export class LiveViewManager {
 
 		this.views = this.getViews();
 
+		this.sharedFolders.on(() => {
+			this.refresh("[Shared Folders]");
+		});
+
 		this.refresh("Constructor");
 	}
 	loginBanner() {
