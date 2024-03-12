@@ -13,7 +13,6 @@ function diffToChangeSet(originalText: string, newText: string): ChangeSet {
 	const diffResult = diffChars(originalText, newText);
 
 	let index = 0;
-	console.log(diffResult);
 	for (const part of diffResult) {
 		if (!part.count) {
 			continue;
@@ -50,9 +49,6 @@ function diffToChangeSet(originalText: string, newText: string): ChangeSet {
 			lastChange = _change;
 		}
 	});
-	console.log(changes);
-	//console.log(reduced);
-	//return changes;
 	return ChangeSet.of(changes, originalText.length);
 }
 
@@ -71,8 +67,11 @@ export class ShareLinkPluginValue implements PluginValue {
 		this.view = this.connectionManager.findView(editor);
 		this.editor = editor;
 		if (this.view) {
-			this.view.document.whenSynced().then(() => {
-				this.updateFrontMatter();
+			this.view.document.whenSynced().then(async () => {
+				const locallyRaised = await this.view?.document.locallyRaised();
+				if (this.view?.document.text || locallyRaised) {
+					this.updateFrontMatter();
+				}
 			});
 		}
 	}
@@ -82,7 +81,6 @@ export class ShareLinkPluginValue implements PluginValue {
 			return;
 		}
 		if (this.view.document.text != this.editor.state.doc.toString()) {
-			console.log("doc is out of sync, skipping");
 			return;
 		}
 		const text = this.editor.state.doc.toString();
@@ -91,11 +89,13 @@ export class ShareLinkPluginValue implements PluginValue {
 			shareLink: shareLink,
 		});
 		if (!text) {
+			// document is empty
 			this.editor.dispatch({
 				changes: { from: 0, insert: withShareLink },
 				annotations: [shareLinkAnnotation.of(this)],
 			});
 		} else if (!text.startsWith("---")) {
+			// frontmatter is missing
 			this.editor.dispatch({
 				changes: {
 					from: 0,
@@ -104,16 +104,17 @@ export class ShareLinkPluginValue implements PluginValue {
 				annotations: [shareLinkAnnotation.of(this)],
 			});
 		} else if (!hasKey(text, "shareLink")) {
-			// frontmatter exists, key is missing
+			// frontmatter exists, but the key is missing
 			this.editor.dispatch({
 				changes: { from: 3, insert: `\nshareLink: '${shareLink}'\n` },
 				annotations: [shareLinkAnnotation.of(this)],
 			});
 		} else {
-			// FIXME
-			// frontmatter exists, key is present
+			// frontmatter exists, and the key is present
 			const changeSet = diffToChangeSet(text, withShareLink);
-			console.log(changeSet);
+			if (changeSet.empty) {
+				return;
+			}
 			this.editor.dispatch({
 				changes: changeSet,
 				annotations: [shareLinkAnnotation.of(this)],
