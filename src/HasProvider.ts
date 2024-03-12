@@ -34,8 +34,6 @@ export class HasProvider {
 	log = curryLog("[HasProvider]");
 
 	async _getProviderToken(): Promise<ClientToken> {
-		//await this.getUser();
-		console.log("getting provider token", this.loginManager.user);
 		const headers = {
 			Authorization: `Bearer ${this.loginManager.user.token}`,
 		};
@@ -61,7 +59,6 @@ export class HasProvider {
 	}
 
 	async getProviderToken(): Promise<ClientToken> {
-		//await this.getUser();
 		if (this.clientToken) {
 			return this.clientToken;
 		}
@@ -90,8 +87,6 @@ export class HasProvider {
 
 	refreshProvider() {
 		this._getProviderToken().then((clientToken) => {
-			// XXX this is wasteful, but lets me avoid setting the URL manually for now...
-			// probably best to just set the query params
 			this.clientToken = clientToken;
 			const tempProvider = new YSweetProvider(
 				clientToken.url,
