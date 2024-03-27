@@ -1,6 +1,6 @@
 "use strict";
 
-import { Plugin, TFolder, Notice } from "obsidian";
+import { Plugin, TFolder, Notice, MarkdownView, TFile } from "obsidian";
 
 import { SharedFolder, SharedFolderSettings } from "./SharedFolder";
 import { LiveViewManager } from "./LiveViews";
@@ -15,6 +15,7 @@ import { FolderMenu } from "./ui/FolderMenu";
 import { LiveSettingsTab } from "./ui/SettingsTab";
 import { LoginManager } from "./LoginManager";
 import { curryLog } from "./debug";
+import { around } from "monkey-around";
 
 interface LiveSettings {
 	sharedFolders: SharedFolderSettings[];
@@ -135,85 +136,111 @@ export default class Live extends Plugin {
 
 		this.addSettingTab(new LiveSettingsTab(this.app, this));
 
-		this.app.workspace.on("file-open", (file) => {
-			plugin._liveViews.refresh("file-open");
-		});
+		const workspaceLog = curryLog("[Live][Workspace]");
+
+		this.registerEvent(
+			this.app.workspace.on("file-open", (file) => {
+				workspaceLog("file-open");
+				plugin._liveViews.refresh("file-open");
+			})
+		);
+
+		this.registerEvent(
+			this.app.workspace.on("layout-change", () => {
+				workspaceLog("layout-change");
+				this._liveViews.refresh("layout-change");
+			})
+		);
 
 		const vaultLog = curryLog("[Live][Vault]");
-		this.app.vault.on("create", (file) => {
-			vaultLog("create", file);
-			// NOTE: this is called on every file at startup...
-			if (file instanceof TFolder) {
-				return;
-			}
-			const folder = this.sharedFolders.lookup(file.path);
-			if (folder) {
-				folder.whenReady().then((folder) => {
-					folder.getFile(file.path, true);
-				});
-			}
-		});
 
-		this.app.vault.on("delete", (file) => {
-			vaultLog("delete", file);
-			if (file instanceof TFolder) {
-				const folder = this.sharedFolders.find(
-					(folder) => folder.path === file.path
-				);
+		this.registerEvent(
+			this.app.vault.on("create", (file) => {
+				vaultLog("create", file);
+				// NOTE: this is called on every file at startup...
+				if (file instanceof TFolder) {
+					return;
+				}
+				const folder = this.sharedFolders.lookup(file.path);
 				if (folder) {
-					this.sharedFolders.delete(folder);
+					folder.whenReady().then((folder) => {
+						folder.getFile(file.path, true);
+					});
 				}
-				return;
-			}
-			const folder = this.sharedFolders.lookup(file.path);
-			if (folder) {
-				folder.whenReady().then((folder) => {
-					folder.deleteFile(file.path);
-				});
-			}
-		});
+			})
+		);
 
-		this.app.vault.on("rename", (file, oldPath) => {
-			vaultLog("rename", file, oldPath);
-			// TODO: this is broken when moving files between two shared folders...
-			// TODO: this is broken when renaming a shared folder
-			if (file instanceof TFolder) {
-				const sharedFolder = this.sharedFolders.find((folder) => {
-					return folder.path == oldPath;
-				});
-				if (sharedFolder) {
-					sharedFolder.path = file.path;
-					this.sharedFolders.update();
+		this.registerEvent(
+			this.app.vault.on("delete", (file) => {
+				vaultLog("delete", file);
+				if (file instanceof TFolder) {
+					const folder = this.sharedFolders.find(
+						(folder) => folder.path === file.path
+					);
+					if (folder) {
+						this.sharedFolders.delete(folder);
+					}
+					return;
 				}
-				return;
-			}
-			const folder =
-				this.sharedFolders.lookup(oldPath) ||
-				this.sharedFolders.lookup(file.path);
-			if (folder) {
-				folder.whenReady().then((folder) => {
-					folder.renameFile(file.path, oldPath);
-				});
-			}
-			this._liveViews.refresh("rename");
-		});
+				const folder = this.sharedFolders.lookup(file.path);
+				if (folder) {
+					folder.whenReady().then((folder) => {
+						folder.deleteFile(file.path);
+					});
+				}
+			})
+		);
 
-		this.app.vault.on("modify", (file) => {
-			vaultLog("modify", file);
-			const folder = this.sharedFolders.lookup(file.path);
-			if (folder) {
-				this.app.metadataCache.trigger("resolve", file);
-			}
-		});
+		this.registerEvent(
+			this.app.vault.on("rename", (file, oldPath) => {
+				vaultLog("rename", file, oldPath);
+				// TODO: this is broken when moving files between two shared folders...
+				// TODO: this is broken when renaming a shared folder
+				if (file instanceof TFolder) {
+					const sharedFolder = this.sharedFolders.find((folder) => {
+						return folder.path == oldPath;
+					});
+					if (sharedFolder) {
+						sharedFolder.path = file.path;
+						this.sharedFolders.update();
+					}
+					return;
+				}
+				const folder =
+					this.sharedFolders.lookup(oldPath) ||
+					this.sharedFolders.lookup(file.path);
+				if (folder) {
+					folder.whenReady().then((folder) => {
+						folder.renameFile(file.path, oldPath);
+					});
+				}
+				this._liveViews.refresh("rename");
+			})
+		);
+
+		this.registerEvent(
+			this.app.vault.on("modify", (file) => {
+				vaultLog("modify", file);
+				const folder = this.sharedFolders.lookup(file.path);
+				if (folder) {
+					this.app.metadataCache.trigger("resolve", file);
+				}
+			})
+		);
 
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const plugin = this;
 
-		this.registerEvent(
-			this.app.workspace.on("layout-change", () => {
-				this._liveViews.refresh("layout-change");
-			})
-		);
+		const patchOnUnloadFile = around(MarkdownView.prototype, {
+			onUnloadFile(old) {
+				return function (file) {
+					plugin._liveViews.refresh("unload");
+					return old.call(this, file);
+				};
+			},
+		});
+
+		this.registerEvent(patchOnUnloadFile);
 	}
 
 	onunload() {

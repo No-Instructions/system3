@@ -9,7 +9,7 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
-const prod = (process.argv[2] === "production");
+const debug = (process.argv[2] === "debug");
 
 const context = await esbuild.context({
 	banner: {
@@ -35,14 +35,17 @@ const context = await esbuild.context({
 	format: "cjs",
 	target: "es2018",
 	logLevel: "info",
-	sourcemap: prod ? false : "inline",
+	sourcemap: debug ? "inline": false,
+    define: {
+      'BUILD_TYPE': '"' + process.argv[2] + '"'
+    },
 	treeShaking: true,
-	outfile: "main.js",
+	outfile: "../obsidian-live/main.js",
 });
 
-if (prod) {
+if (debug) {
+	await context.watch();
+} else {
 	await context.rebuild();
 	process.exit(0);
-} else {
-	await context.watch();
 }

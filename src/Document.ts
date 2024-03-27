@@ -14,6 +14,7 @@ export class Document extends HasProvider {
 	private _persistence: IndexeddbPersistence;
 	ydoc: Y.Doc;
 	path: string;
+	_locallyRaised: boolean;
 
 	constructor(
 		path: string,
@@ -95,8 +96,12 @@ export class Document extends HasProvider {
 
 	async locallyRaised(): Promise<boolean> {
 		// XXX: Might be able to use _persistence.once("synced", ...) instead
+		if (this._locallyRaised !== undefined) {
+			return this._locallyRaised;
+		}
 		const nUpdates = await this._countUpdates();
-		return nUpdates < 3;
+		this._locallyRaised = nUpdates < 3;
+		return this._locallyRaised;
 	}
 
 	destroy() {

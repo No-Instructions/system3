@@ -95,8 +95,6 @@ export class LiveView {
 	}
 
 	connect() {
-		console.log("connecting");
-		// check the document for a token.
 		if (!this._connectionStatusIcon) {
 			this._connectionStatusIcon = new ConnectionStatusIcon(this);
 		}
@@ -280,7 +278,6 @@ export class LiveViewManager {
 		log("Ready Folders", readyFolders);
 
 		const [matching, stale] = this.deduplicate();
-		//this.load();
 
 		if (stale.length == 0 && ViewsetsEqual(matching, this.views)) {
 			log("No work to do");
@@ -299,8 +296,10 @@ export class LiveViewManager {
 	}
 
 	async refresh(context: string): Promise<void> {
+		const log = curryLog(context);
 		if (this._activePromise) {
 			this._stale = true;
+			log("refresh views was already running");
 			return;
 		}
 		this._activePromise = this._refreshViews(context);

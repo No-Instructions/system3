@@ -34,11 +34,13 @@ export class HasProvider {
 	log = curryLog("[HasProvider]");
 
 	async _getProviderToken(): Promise<ClientToken> {
+		this.log("getting token for ", this.path);
 		const headers = {
 			Authorization: `Bearer ${this.loginManager.user.token}`,
 		};
+		console.log(this.loginManager.user.token);
 		const promise = requestUrl({
-			url: "https://tf-server.fly.dev/doc/token",
+			url: "https://api.dnup.org/doc/token",
 			method: "POST",
 			headers: headers,
 			body: JSON.stringify({ docId: this.guid }),

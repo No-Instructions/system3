@@ -35,5 +35,61 @@ export class LiveSettingsTab extends PluginSettingTab {
 					})()
 				);
 		}
+
+		//		const formEl = stripeEl.createEl("form");
+		//		formEl.addClass("stripe");
+		//		formEl.setAttr("id", "payment-form");
+		//
+		//		const paymentEl = formEl.createDiv();
+		//		paymentEl.setAttr("id", "payment-element");
+		//
+		const subscribe = this.plugin.loginManager.sm.subscription?.subscribe;
+		if (subscribe) {
+			const stripeEl = containerEl.createDiv();
+			stripeEl.createEl("h2", { text: "Manage Subscription" });
+			stripeEl.addClass("stripe");
+
+			const linkEl = stripeEl.createEl("a", {
+				href: subscribe,
+			});
+			const buttonEl = linkEl.createEl("button");
+
+			const buttonText = buttonEl.createSpan();
+			buttonText.setAttr("id", "button-text");
+			buttonText.innerHTML = "Subscribe";
+		}
+		const cancel = this.plugin.loginManager.sm.subscription?.cancel;
+		if (cancel) {
+			const stripeEl = containerEl.createDiv();
+			stripeEl.createEl("h2", { text: "Manage Subscription" });
+			stripeEl.addClass("stripe");
+
+			const linkEl = stripeEl.createEl("a", {
+				href: cancel,
+			});
+			const buttonEl = linkEl.createEl("button");
+
+			const buttonText = buttonEl.createSpan();
+			buttonText.setAttr("id", "button-text");
+			buttonText.innerHTML = "Cancel Subscription";
+		}
+
+		//
+		//		const spinnerEl = buttonEl.createDiv();
+		//		spinnerEl.addClasses(["spinner", "hidden"]);
+		//
+		//
+		//		//buttonEl.appendChild(spinnerEl);
+		//		//buttonEl.appendChild(buttonText);
+		//
+		//		const paymentMessage = formEl.createDiv();
+		//		paymentMessage.addClass("hidden");
+		//
+		//formEl.appendChild(paymentEl);
+		//formEl.appendChild(buttonEl);
+		//formEl.appendChild(paymentMessage);
+
+		//stripeEl.appendChild(formEl);
+		//containerEl.appendChild(stripeEl);
 	}
 }
