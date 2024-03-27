@@ -1,34 +1,18 @@
----
-name: "pre-release"
+name: Releases
 
-on:
+on: 
   push:
-    branches:
-      - "master"
+    tags:
+    - '*'
 
 jobs:
-  pre-release:
-    name: "Pre Release"
-    runs-on: "ubuntu-latest"
-
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: "Checkout"
-        uses: actions/checkout@v2
-
-      - name: "Build & test"
-        run: |
-          echo "Build & test steps go here"
-          echo "done!"
-
-      - name: "Create Release"
-        uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
-          prerelease: true
-          title: "Development Build"
-          files: |
-            main.js
-            styles.css
-            manifest.json
-            LICENSE
+    - uses: actions/checkout@v3
+    - uses: ncipollo/release-action@v1
+      with:
+        artifacts: "main.js,styles.css,manifest.json"
+        prerelease: true
